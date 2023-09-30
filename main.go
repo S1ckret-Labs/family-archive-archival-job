@@ -7,14 +7,14 @@ import (
 )
 
 func main() {
-	config := loadConfig()
-	dbConStr := config.GetString("database_connection_string")
+	//config := loadConfig()
+	//dbConStr := config.GetString("database_connection_string")
 	//userId := config.GetInt64("user_id")
 	//fileUploadsBucketName := config.GetString("file_uploads_bucket_name")
 	//archivesBucketName := config.GetString("archives_bucket_name")
 
-	db, _ := sql.Open("mysql", dbConStr)
-	defer db.Close()
+	//db, _ := sql.Open("mysql", dbConStr)
+	//defer db.Close()
 
 	//awsSession := session.Must(session.NewSession())
 	//s3Client := s3.New(awsSession)
