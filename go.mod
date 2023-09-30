@@ -1,6 +1,6 @@
 module github.com/S1ckret-Labs/family-archive-archival-job
 
-go 1.20
+go 1.21
 
 require (
 	github.com/spf13/viper v1.16.0
