@@ -252,7 +252,7 @@ type GroupingState struct {
 	currMonth      string
 }
 
-func (s GroupingState) Reset() {
+func (s *GroupingState) Reset() {
 	s.dirsToArchive = []*Node{}
 	s.bytesCounter = 0
 	s.objectsCounter = 0
