@@ -329,15 +329,18 @@ func tryToArchive(parent *Node, curr *Node, state *GroupingState) {
 		return
 	}
 
+	// Archive dirs now
 	archiveName := createArchiveName(state.currYear, state.currMonth, state.dirsToArchive)
 	archiveNode := createArchiveNode(archiveName, state.bytesCounter, state.objectsCounter, state.dirsToArchive)
-
-	// Replace day level dirs with archive
-	parent.children.Insert(&archiveNode)
-	parent.children.RemoveSlice(state.dirsToArchive)
+	replaceDirsWithArchive(parent, archiveNode, state)
 
 	// Reset state
 	state.Reset()
+}
+
+func replaceDirsWithArchive(parent *Node, archiveNode Node, state *GroupingState) {
+	parent.children.Insert(&archiveNode)
+	parent.children.RemoveSlice(state.dirsToArchive)
 }
 
 func createArchiveNode(archiveName string, sizeBytes, objectsNum int64, dirsToArchive []*Node) Node {
