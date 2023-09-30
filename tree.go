@@ -292,7 +292,21 @@ func tryToArchive(parent *Node, curr *Node, state *GroupingState) {
 		return
 	}
 
-	// TODO: Year and month snappienes HERE. An archive must not span across months or years.
+	// Check for year and month snappienes. An archive must not span across multiple months or years.
+	if len(state.dirsToArchive) != 0 {
+		yearIsDifferent := dir.level == yearLevel && state.currYear != dir.Key()
+		monthIsDifferent := dir.level == monthLevel && state.currMonth != dir.Key()
+		if yearIsDifferent || monthIsDifferent {
+			// Current year or month differs from previous.
+			// That means that we entered a new year or month.
+			// We need to archive collected dirs to avoid spreading the archive across months or years.
+			fmt.Printf("[Archival] Oh, snap! We need to archive now because we entered a new month or year! Previous year = %s, month = %s. Current dirLevel = %d, dirKey = %s\n", state.currYear, state.currMonth, dir.level, dir.Key())
+			archiveName := createArchiveName(state.currYear, state.currMonth, state.dirsToArchive)
+			archiveNode := createArchiveNode(archiveName, state.bytesCounter, state.objectsCounter, state.dirsToArchive)
+			replaceDirsWithArchive(parent, archiveNode, state)
+		}
+	}
+
 	// Remember year, month for archive name
 	if dir.level == yearLevel {
 		state.currYear = dir.Key()
