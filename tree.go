@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/hashicorp/go-set"
+	"github.com/tidwall/btree"
 	"gopkg.in/guregu/null.v4"
 	"strconv"
 	"time"
@@ -57,21 +57,17 @@ func (f File) Key() string {
 
 type Node struct {
 	object   Object
-	children *set.Set[*Node]
+	children *btree.Map[string, *Node]
 }
 
 func (n *Node) hasChildOneLevel(key string) *Node {
-	for _, c := range n.children.Slice() {
-		if c.object.Key() == key {
-			return c
-		}
-	}
-	return nil
+	v, _ := n.children.Get(key)
+	return v
 }
 
 func (n *Node) insert(obj Object) *Node {
-	newNode := Node{object: obj, children: set.New[*Node](5)}
-	n.children.Insert(&newNode)
+	newNode := Node{object: obj, children: btree.NewMap[string, *Node](32)}
+	n.children.Set(obj.Key(), &newNode)
 	return &newNode
 }
 
@@ -81,7 +77,7 @@ type ObjectTree struct {
 
 func newObjectTree() ObjectTree {
 	rootNode := Node{
-		children: set.New[*Node](5),
+		children: btree.NewMap[string, *Node](32),
 		object: Dir{
 			key:           "/",
 			level:         rootLevel,
@@ -173,7 +169,7 @@ func TraverseTreePostOrder(t ObjectTree) {
 		return
 	}
 
-	t.root.children.ForEach(func(node *Node) bool {
+	t.root.children.Scan(func(_ string, node *Node) bool {
 		TraverseTreePostOrder(ObjectTree{root: node})
 		return true
 	})
@@ -215,7 +211,7 @@ func _collectFolderSizeAndObjectInPlace(curr *Node) (int64, int64) {
 	// Dive into the depth of a tree
 	var currBytes int64 = 0
 	var currObjects int64 = 0
-	curr.children.ForEach(func(child *Node) bool {
+	curr.children.Scan(func(_ string, child *Node) bool {
 		bytes, objects := _collectFolderSizeAndObjectInPlace(child)
 		currBytes += bytes
 		currObjects += objects
@@ -317,7 +313,7 @@ func tryToArchive(parent *Node, curr *Node, state *GroupingState) {
 	// Dive into the depth of a tree
 	// We don't want to dive deeper if a dir has level = day level
 	if dir.level < dayLevel {
-		curr.children.ForEach(func(child *Node) bool {
+		curr.children.Scan(func(_ string, child *Node) bool {
 			tryToArchive(curr, child, state)
 			return true
 		})
@@ -353,8 +349,10 @@ func tryToArchive(parent *Node, curr *Node, state *GroupingState) {
 }
 
 func replaceDirsWithArchive(parent *Node, archiveNode Node, dirsToArchive []*Node) {
-	parent.children.Insert(&archiveNode)
-	parent.children.RemoveSlice(dirsToArchive)
+	parent.children.Set(archiveNode.object.Key(), &archiveNode)
+	for _, dir := range dirsToArchive {
+		parent.children.Delete(dir.object.Key())
+	}
 }
 
 func createArchiveNode(archiveName string, sizeBytes, objectsNum int64, dirsToArchive []*Node) Node {
@@ -365,9 +363,12 @@ func createArchiveNode(archiveName string, sizeBytes, objectsNum int64, dirsToAr
 	}
 
 	// Collect all day level dirs children together
-	archiveChildren := set.New[*Node](int(objectsNum))
+	archiveChildren := btree.NewMap[string, *Node](32)
 	for _, dir := range dirsToArchive {
-		archiveChildren.InsertSet(dir.children)
+		dir.children.Scan(func(key string, node *Node) bool {
+			archiveChildren.Set(key, node)
+			return true
+		})
 	}
 
 	return Node{
