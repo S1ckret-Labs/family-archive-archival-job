@@ -244,6 +244,7 @@ type GroupingState struct {
 	bytesCounter   int64
 	objectsCounter int64
 	dirsToArchive  []*Node
+	previousNode   *Node
 	currYear       string
 	currMonth      string
 }
@@ -252,6 +253,7 @@ func (s *GroupingState) Reset() {
 	s.dirsToArchive = []*Node{}
 	s.bytesCounter = 0
 	s.objectsCounter = 0
+	s.previousNode = nil
 }
 
 func ArchiveDaysInplace(t ObjectTree) {
@@ -259,6 +261,7 @@ func ArchiveDaysInplace(t ObjectTree) {
 		bytesCounter:   0,
 		objectsCounter: 0,
 		dirsToArchive:  nil,
+		previousNode:   nil,
 		currYear:       "year",
 		currMonth:      "month",
 	}
@@ -299,7 +302,9 @@ func tryToArchive(parent *Node, curr *Node, state *GroupingState) {
 			fmt.Printf("[Archival] Oh, snap! We need to archive now because we entered a new month or year! Previous year = %s, month = %s. Current dirLevel = %d, dirKey = %s\n", state.currYear, state.currMonth, dir.level, dir.Key())
 			archiveName := createArchiveName(state.currYear, state.currMonth, state.dirsToArchive)
 			archiveNode := createArchiveNode(archiveName, state.bytesCounter, state.objectsCounter, state.dirsToArchive)
-			replaceDirsWithArchive(parent, archiveNode, state.dirsToArchive)
+			replaceDirsWithArchive(state.previousNode, archiveNode, state.dirsToArchive)
+			// Reset state
+			state.Reset()
 		}
 	}
 
@@ -309,6 +314,9 @@ func tryToArchive(parent *Node, curr *Node, state *GroupingState) {
 	} else if dir.level == monthLevel {
 		state.currMonth = dir.Key()
 	}
+
+	// Remember the node
+	state.previousNode = parent
 
 	// Dive into the depth of a tree
 	// We don't want to dive deeper if a dir has level = day level
