@@ -3,8 +3,8 @@ module github.com/S1ckret-Labs/family-archive-archival-job
 go 1.21
 
 require (
-	github.com/hashicorp/go-set v0.1.14
 	github.com/spf13/viper v1.16.0
+	github.com/tidwall/btree v1.7.0
 	gopkg.in/guregu/null.v4 v4.0.0
 )
 
