@@ -303,7 +303,7 @@ func tryToArchive(parent *Node, curr *Node, state *GroupingState) {
 			fmt.Printf("[Archival] Oh, snap! We need to archive now because we entered a new month or year! Previous year = %s, month = %s. Current dirLevel = %d, dirKey = %s\n", state.currYear, state.currMonth, dir.level, dir.Key())
 			archiveName := createArchiveName(state.currYear, state.currMonth, state.dirsToArchive)
 			archiveNode := createArchiveNode(archiveName, state.bytesCounter, state.objectsCounter, state.dirsToArchive)
-			replaceDirsWithArchive(parent, archiveNode, state)
+			replaceDirsWithArchive(parent, archiveNode, state.dirsToArchive)
 		}
 	}
 
@@ -346,15 +346,15 @@ func tryToArchive(parent *Node, curr *Node, state *GroupingState) {
 	// Archive dirs now
 	archiveName := createArchiveName(state.currYear, state.currMonth, state.dirsToArchive)
 	archiveNode := createArchiveNode(archiveName, state.bytesCounter, state.objectsCounter, state.dirsToArchive)
-	replaceDirsWithArchive(parent, archiveNode, state)
+	replaceDirsWithArchive(parent, archiveNode, state.dirsToArchive)
 
 	// Reset state
 	state.Reset()
 }
 
-func replaceDirsWithArchive(parent *Node, archiveNode Node, state *GroupingState) {
+func replaceDirsWithArchive(parent *Node, archiveNode Node, dirsToArchive []*Node) {
 	parent.children.Insert(&archiveNode)
-	parent.children.RemoveSlice(state.dirsToArchive)
+	parent.children.RemoveSlice(dirsToArchive)
 }
 
 func createArchiveNode(archiveName string, sizeBytes, objectsNum int64, dirsToArchive []*Node) Node {
